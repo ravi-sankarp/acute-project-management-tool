@@ -4,5 +4,13 @@
   "sourceRoot": "src",
   "generateOptions": {
     "spec": false
+  },
+  "compilerOptions": {
+    "assets": [
+      {
+        "include": "secrets",
+        "watchAssets": true
+      }
+    ]
   }
 }

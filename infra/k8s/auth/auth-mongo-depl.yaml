@@ -1,0 +1,67 @@
+  apiVersion: "v1"
+  kind: "PersistentVolumeClaim"
+  metadata: 
+    name: "auth-mongo-pvc"
+    namespace: "default"
+    labels: 
+      app: "auth-mongo-depl"
+  spec: 
+    accessModes: 
+      - ReadWriteOnce
+    resources: 
+      requests: 
+        storage: 1Gi
+    storageClassName: gp2
+
+         
+              
+---
+  apiVersion: "v1"
+  kind: "Service"
+  metadata: 
+    name: "auth-mongo-srv"
+    namespace: "default"
+    labels: 
+      app: "auth-mongo-srv"
+  spec: 
+    ports: 
+      - 
+        name: "mongodb"
+        port: 27017
+        targetPort: 27017
+    selector: 
+      app: "auth-mongo"
+      
+      
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-mongo-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-mongo-depl
+  template:
+    metadata:
+      labels:
+        app: auth-mongo-depl
+    spec:
+      containers:
+        - name: auth-mongo-depl
+          image: mongo
+          ports:
+            - containerPort: 27017
+          resources: {}
+          volumeMounts:
+            - mountPath: /data/db
+              name: auth-mongo-pvc
+      restartPolicy: Always
+      volumes:
+        - name: auth-mongo-pvc
+          persistentVolumeClaim:
+            claimName: auth-mongo-pvc
+
+---

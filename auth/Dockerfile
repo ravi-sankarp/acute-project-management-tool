@@ -1,12 +1,13 @@
 FROM node:18.12-alpine3.15
 
-WORKDIR /app/auth
+WORKDIR /acute-app/auth
 
-COPY ./package*.json .
+COPY ./*.json ./
 
 RUN npm install
 
-COPY ./* ./
+COPY ./src ./src
+
 
 CMD ["npm","run","start:dev"]
 

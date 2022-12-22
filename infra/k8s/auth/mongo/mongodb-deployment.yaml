@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: auth-mongo-depl
+  name: auth-mongo-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: auth-mongo-depl
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: auth-mongo-depl
+    spec:
+      containers:
+        - image: mongo:latest
+          name: auth-mongo-depl
+          ports:
+            - containerPort: 27017
+          resources: {}
+          volumeMounts:
+            - mountPath: /data/db
+              name: auth-mongo-vol
+      restartPolicy: Always
+      volumes:
+        - name: auth-mongo-vol
+          persistentVolumeClaim:
+            claimName: auth-mongo-vol
+status: {}
