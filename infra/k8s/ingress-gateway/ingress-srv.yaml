@@ -4,17 +4,56 @@ metadata:
   name: ingress-service
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
-    nginx.ingress.kubernetes.io/use-regex: 'true'
-    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://localhost:5173"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+     - acute.dev
+    secretName: ingress-tls
   rules:
     - host: acute.dev
       http:
-        paths: 
+        paths:
           - path: /api/auth/?(.*)
             pathType: Prefix
             backend:
               service:
-                 name: auth-srv
-                 port:
-                    number: 3000              
+                name: auth-srv
+                port:
+                  number: 3000
+          - path: /api/project/?(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: project-srv
+                port:
+                  number: 3000
+  
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: auth-srv
+  namespace: ingress-nginx
+spec:
+  type: ExternalName
+  externalName: auth-srv.default.svc.cluster.local
+  ports:
+    - port: 3000
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: project-srv
+  namespace: ingress-nginx
+spec:
+  type: ExternalName
+  externalName: project-srv.default.svc.cluster.local
+  ports:
+    - port: 3000

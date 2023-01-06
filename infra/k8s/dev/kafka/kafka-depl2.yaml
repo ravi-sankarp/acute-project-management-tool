@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+   service: kafka
+  name: kafka-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: kafka
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        network/kafka-network: "true"
+        service: kafka
+    spec:
+      containers:
+        - env:
+            - name: ALLOW_PLAINTEXT_LISTENER
+              value: "yes"
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: PLAINTEXT://kafka-srv:9092
+            - name: KAFKA_CFG_ZOOKEEPER_CONNECT
+              value: zookeeper-srv:2181
+          imagePullPolicy: IfNotPresent
+          image: bitnami/kafka:latest
+          name: kafka
+          ports:
+            - containerPort: 9092
+            - containerPort: 29092
+          resources: {}
+      restartPolicy: Always
+status: {}

@@ -14,8 +14,12 @@ spec:
     spec:
       containers:
         - name: auth
-          image: ravisankarp/acute-auth
-          imagePullPolicy: Never
+          image: acutereg.azurecr.io/auth:latest
+          imagePullPolicy: Always
+
+      imagePullSecrets:
+        - name: acr-secret
+
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,89 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mongodb-storageclass
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Premium_LRS
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+
+---
+apiVersion: "v1"
+kind: PersistentVolume
+metadata:
+  name: project-mongo-pv
+  labels:
+    app: "project-mongo-pv"
+spec:
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: mongodb-storageclass
+  capacity:
+    storage: 400M
+  hostPath:
+    path: /data/project-db
+
+---
+apiVersion: "v1"
+kind: "PersistentVolumeClaim"
+metadata:
+  name: "project-mongo-pvc"
+  labels:
+    app: "project-mongo-pvc"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: mongodb-storageclass
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 400M
+
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "project-mongo-srv"
+  namespace: "default"
+  labels:
+    app: "project-mongo-srv"
+spec:
+  ports:
+    - name: "mongodb"
+      port: 27017
+      targetPort: 27017
+  selector:
+    app: "project-mongo-depl"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-mongo-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: project-mongo-depl
+  template:
+    metadata:
+      labels:
+        app: project-mongo-depl
+    spec:
+      containers:
+        - name: project-mongo-depl
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - mountPath: /data/project-db
+              name: project-mongo-pvc
+      restartPolicy: Always
+      volumes:
+        - name: project-mongo-pvc
+          persistentVolumeClaim:
+            claimName: project-mongo-pvc
