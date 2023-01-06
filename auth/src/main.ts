@@ -3,7 +3,6 @@ import * as morgan from 'morgan';
 import * as cookieParser from 'cookie-parser';
 import { CustomErrorExceptionFilter } from '@acute-project/common';
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 
 async function bootstrap() {

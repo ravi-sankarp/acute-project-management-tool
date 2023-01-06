@@ -7,7 +7,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { UserDocument } from './app.schema';
 import { AppService } from './app.service';
 
@@ -21,14 +21,24 @@ export class CurrentUserInterceptor implements NestInterceptor {
 
   async intercept(context: ExecutionContext, handler: CallHandler) {
     const req: Request & { currentUser: UserDocument } = context.switchToHttp().getRequest();
-    if (req.cookies.token) {
-      const { token } = req.cookies;
-      const payload: JwtUserPayload = await this.jwtService.verifyAsync(token);
-      const user = await this.usersService.getUserDetailsById(payload.id);
-      req.currentUser = user;
+
+    let token: string;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Not authorized to access this route');
+      }
     } else {
       throw new UnauthorizedException('Not authorized to access this route');
     }
+
+    const payload: JwtUserPayload = await this.jwtService.verifyAsync(token);
+    const user = await this.usersService.getUserDetailsById(payload.id);
+
+    if (!user) {
+      throw new UnauthorizedException('Cannot find your account');
+    }
+    req.currentUser = user;
 
     return handler.handle();
   }

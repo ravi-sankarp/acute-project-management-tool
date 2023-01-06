@@ -25,7 +25,7 @@ import { clientId } from '@acute-project/common';
         options: {
           client: {
             clientId: clientId.AUTH_SERVICE,
-            brokers: ['localhost:9092']
+            brokers: ['kafka-srv:9092']
           },
           producerOnlyMode: true
         }

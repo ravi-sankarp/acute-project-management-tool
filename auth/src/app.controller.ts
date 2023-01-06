@@ -6,12 +6,12 @@ import {
   Delete,
   HttpCode,
   Post,
+  Put,
   Res,
   UseInterceptors
 } from '@nestjs/common';
 import { Response } from 'express';
 import { comparePassword } from '@acute-project/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AppService } from './app.service';
 import { LoginUserDto } from './dtos/user-login.dto';
@@ -27,7 +27,6 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private jwtService: JwtService,
-    private configService: ConfigService,
     private kafkaService: AuthKafkaService
   ) {}
 
@@ -43,22 +42,18 @@ export class AppController {
     }
 
     // checking if passwords match
-    if (!comparePassword(data.password, user.password)) {
+    if (!(await comparePassword(data.password, user.password))) {
       // rejecting the request if passwords does not match
       throw new BadRequestException('Invalid credentials');
     }
 
     //sending token as response on successfull login
     const token = await this.jwtService.signAsync({ id: user.id });
-    res.cookie('token', token, {
-      sameSite: true,
-      httpOnly: true,
-      expires: this.configService.get('JWT_EXPIRY-TIME'),
-      secure: this.configService.get('NODE_ENV') === 'production' ? true : false
-    });
+
     return {
       status: 'success',
-      message: 'Login Successfull'
+      message: 'Login Successfull',
+      token
     };
   }
 
@@ -85,12 +80,6 @@ export class AppController {
 
     //sending token as response on successfull login
     const token = await this.jwtService.signAsync({ id: createdUser.id });
-    res.cookie('token', token, {
-      sameSite: true,
-      httpOnly: true,
-      expires: this.configService.get('JWT_EXPIRY-TIME'),
-      secure: this.configService.get('NODE_ENV') === 'production' ? true : false
-    });
 
     const userDetails = {
       _id: createdUser.id,
@@ -103,13 +92,15 @@ export class AppController {
     this.kafkaService.userCreated(userDetails);
     return {
       status: 'success',
-      message: 'Successfully created your account'
+      message: 'Successfully created your account',
+      token
     };
   }
 
-  @Post('/userdetails')
+  @Put('/updatedetails')
   @UseInterceptors(CurrentUserInterceptor)
   async updateUserDetails(@Body() data: UpdateUserDto, @CurrentUser() user: UserDocument) {
+    console.log(data);
     //checking if email already exists
     if (data.email !== user.email) {
       const userExists = await this.appService.getUserDetailsByEmail(data.email);
@@ -132,15 +123,16 @@ export class AppController {
       firstName: data.firstName ?? user.firstName,
       lastName: data.lastName ?? user.lastName
     };
-
+    console.log(updateData);
     const userDetails = await this.appService.updateUserDetails(user.id, updateData);
+    console.log(userDetails);
     const details = {
       _id: userDetails.id,
       firstName: userDetails.firstName,
       lastName: userDetails.lastName,
       email: userDetails.email,
       isDeleted: userDetails.isDeleted,
-      __v: userDetails.__v
+      __v: user.__v
     };
     this.kafkaService.userDataUpdated(details);
 
@@ -152,9 +144,13 @@ export class AppController {
 
   @Delete('/deleteaccount')
   @UseInterceptors(CurrentUserInterceptor)
-  async deleteUserAccount(@CurrentUser() user: UserDocument) {
+  async deleteUserAccount(
+    @CurrentUser() user: UserDocument,
+    @Res({ passthrough: true }) res: Response
+  ) {
     await this.appService.deleteUserAccount(user.id);
     this.kafkaService.userDeleted(user.id);
+
     return {
       status: 'success',
       message: 'Successfully deleted your account'

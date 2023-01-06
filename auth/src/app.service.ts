@@ -13,15 +13,15 @@ export class AppService {
   }
 
   async getUserDetailsByEmail(email: string) {
-    return this.userModel.findOne({ email, isDeleted: false }).select('+password');
+    return this.userModel.findOne({ email }).select('+password');
   }
 
   async checkPhoneNumberExists(phoneNumber: string) {
-    return this.userModel.findOne({ phoneNumber, isDeleted: false });
+    return this.userModel.findOne({ phoneNumber });
   }
 
   async getUserDetailsById(id: string) {
-    return this.userModel.findOne({ id, isDeleted: false });
+    return this.userModel.findById(id );
   }
 
   async updateUserDetails(id: string, data: IUser) {
@@ -36,6 +36,6 @@ export class AppService {
   }
 
   async deleteUserAccount(id: mongooseSchema.Types.ObjectId) {
-    return this.userModel.findByIdAndUpdate(id, { isDeleted: true });
+    return this.userModel.findByIdAndDelete(id);
   }
 }
